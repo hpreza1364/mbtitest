@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>تست شخصیت‌شناسی MBTI — نسخه ساده‌شده</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<!-- html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+
+<style>
+  :root{
+    --bg: #f7f9fc;
+    --card: #ffffff;
+    --ink: #0f1724;
+    --muted: #64748b;
+    --primary: #6c5ce7;
+    --secondary: #00bcd4;
+    --accent: #ff6b6b;
+    --success: #2ecc71;
+    --radius: 14px;
+    --shadow: 0 8px 30px rgba(15,23,36,0.06);
+    --glass: rgba(255,255,255,0.8);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+    background: linear-gradient(180deg, #eef2ff 0%, #f7fbfc 100%);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .container{max-width:1100px;margin:28px auto;padding:18px;}
+  header{
+    background: linear-gradient(135deg,var(--primary),var(--secondary));
+    padding:28px;border-radius:16px;color:white;box-shadow:var(--shadow);
+  }
+  header h1{margin:0;font-size:28px}
+  header p{margin:6px 0 0;opacity:.95}
+
+  .section{background:var(--card); border-radius:var(--radius); padding:18px; margin-top:18px; box-shadow:var(--shadow);}
+  .grid{display:grid;gap:14px; grid-template-columns: repeat(auto-fit,minmax(240px,1fr))}
+  label{display:block;font-weight:600;margin-bottom:6px;color:var(--ink)}
+  input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #e6eef8;background:#fbfdff;color:var(--ink)}
+  .btn{display:inline-block;padding:10px 16px;border-radius:999px;border:none;cursor:pointer;font-weight:700}
+  .btn.primary{background:var(--primary);color:white;box-shadow:0 8px 20px rgba(108,92,231,.12)}
+  .btn.ghost{background:transparent;border:1px solid #e6eef8;color:var(--ink)}
+  .btn.success{background:var(--success);color:white}
+
+  .progress-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:14px;margin-bottom:8px}
+  .bar{height:12px;background:#edf2ff;border-radius:999px;overflow:hidden;border:1px solid #e6eef8}
+  .bar > span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width .35s ease}
+
+  .question{padding:16px;border-radius:12px;background:linear-gradient(180deg,#ffffff,#fbfdff);border:1px solid #eef6ff}
+  .question-text{font-weight:800;color:var(--ink)}
+
+  .options{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .opt{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #f0f6ff;background:#fff;cursor:pointer;transition:all .15s}
+  .opt:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(16,24,40,0.04)}
+  .opt.selected{border-color:var(--primary);background:linear-gradient(90deg,rgba(108,92,231,0.06),rgba(0,188,212,0.03))}
+
+  .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:#f1f8ff;color:var(--primary);font-weight:700;border:1px solid #e8f2ff}
+
+  .card{background:linear-gradient(180deg,#ffffff,#fbfdff);border-radius:12px;padding:14px;border:1px solid #eef6ff;box-shadow:var(--shadow)}
+  .list{padding-left:18px;margin:8px 0}
+  .list li{margin:6px 0;color:var(--ink)}
+
+  .personality-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .person-card{background:#fff;border-radius:12px;padding:12px;text-align:center;border:1px solid #eef6ff}
+  .person-card img{width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 8px;border:4px solid #fbfdff}
+
+  .alert{padding:10px;border-radius:10px;background:#fff3cd;border:1px solid #ffecb5;color:#5b3a00;display:none}
+  .alert.show{display:block}
+
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:12px}
+  .muted{color:var(--muted)}
+
+  /* تغییرات جدید: دکمه‌های رادیویی بزرگتر و در سمت چپ */
+  .opt input[type="radio"] {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    accent-color: var(--primary);
+    order: 1;
+    flex-shrink: 0;
+  }
+  
+  .opt label {
+    order: 2;
+    flex-grow: 1;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  @media (max-width:820px){
+    .grid{grid-template-columns:1fr}
+    .btn-row{justify-content:center}
+  }
+  @media print{
+    .btn, .btn-row, .alert{display:none}
+  }
+</style>
+</head>
+<body>
+  <div class="container" role="main">
+    <header>
+      <h1>تست شخصیت‌شناسی MBTI</h1>
+      <p>شامل 16 تیپ شخصیتی با تحلیل کامل</p>
+    </header>
+
+    <!-- Exam section -->
+    <section id="exam" class="section" aria-labelledby="examTitle">
+      <h2 id="examTitle">پرسش‌ها</h2>
+
+      <div class="progress-meta">
+        <span>سؤال <b id="curQ">1</b> از <b id="totQ">60</b></span>
+        <span class="muted" id="answeredMeta">0 پاسخ داده‌شده</span>
+      </div>
+      <div class="bar"><span id="bar" style="width:0%"></span></div>
+
+      <div id="qWrap" class="question" aria-live="polite">
+        <div id="qText" class="question-text"></div>
+        <div id="opts" class="options" role="radiogroup" aria-label="گزینه‌ها"></div>
+      </div>
+
+      <div class="btn-row">
+        <div style="display:flex;gap:8px">
+          <button type="button" id="prevBtn" class="btn ghost" disabled>قبلی</button>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="nextBtn" class="btn primary">بعدی</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Result section -->
+    <section id="result" class="section" style="display:none" aria-labelledby="resultTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <h2 id="resultTitle">نتیجه آزمون</h2>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button id="retakeBtn" class="btn ghost">شروع دوباره</button>
+          <button id="pdfBtn" class="btn success">دانلود PDF</button>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="chip" id="typeChip">—</div>
+        <div>
+          <h3 id="typeTitle" style="margin:0">—</h3>
+          <p id="typeDesc" style="margin:.35rem 0 .1rem" class="muted">—</p>
+          <div id="confidence" class="muted" style="font-size:13px">اطمینان: —</div>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns: 1fr 1fr; margin-top:12px">
+        <div class="card">
+          <h3>نمودار ابعاد</h3>
+          <canvas id="radar" height="300" aria-label="نمودار رادار"></canvas>
+        </div>
+        <div class="card">
+          <h3>ترکیب کلی (درصد نسبت به کل سوال‌ها)</h3>
+          <canvas id="donut" height="300" aria-label="نمودار دونات"></canvas>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <h3>نقاط قوت</h3>
+          <ul id="strengths" class="list"></ul>
+        </div>
+        <div class="card">
+          <h3>نقاط قابل بهبود</h3>
+          <ul id="weaknesses" class="list"></ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>توصیه‌های کاربردی</h3>
+        <ul id="tips" class="list"></ul>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>مسیرهای شغلی پیشنهادی</h3>
+        <ul id="jobs" class="list"></ul>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>شخصیت‌های مشهور هم‌تیپ (هر کدام توضیح کوتاه دارد)</h3>
+        <div id="famous" class="personality-grid"></div>
+      </div>
+
+      <div id="pdfAlert" class="alert" role="status" style="margin-top:12px"></div>
+    </section>
+
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', ()=>{
+
+  // ============= سوالات (۱ تا ۶۰) - متن فارسی یکدست ============
+  const questions = [
+    "در مهمانی‌ها معمولاً با افراد زیادی صحبت می‌کنید و معاشرتی هستید.",
+    "تصمیم‌گیری‌های شما بیشتر بر اساس منطق است تا احساسات.",
+    "به جزئیات محیط اطراف خود توجه زیادی دارید.",
+    "برنامه‌ریزی و سازماندهی کارها را به انجام خودجوش ترجیح می‌دهید.",
+    "صحبت با افراد جدید برای شما انرژی‌بخش است.",
+    "معمولاً بر اساس اصول و ارزش‌های شخصی خود تصمیم می‌گیرید.",
+    "اغلب در رویاهای خود غرق می‌شوید و ایده‌های جدید خلق می‌کنید.",
+    "لیست کارها و برنامه‌های دقیق به شما کمک می‌کند تا کارها را به‌خوبی انجام دهید.",
+    "ترجیح می‌دهید زمان خود را تنها بگذرانید تا در جمع‌های بزرگ.",
+    "هنگام حل مشکلات، بیشتر بر حقایق و داده‌ها تکیه می‌کنید تا شهود.",
+    "به جای برنامه‌ریزی دقیق، ترجیح می‌دهید گزینه‌های خود را باز نگه دارید.",
+    "معمولاً در مرکز توجه قرار دارید و دیگران را سرگرم می‌کنید.",
+    "همدلی و هماهنگی در روابط برای شما بسیار مهم است.",
+    "به احتمالات و معانی پنهان بیش از واقعیات آشکار توجه دارید.",
+    "تصمیم‌گیری‌های سریع و قاطعانه را به تأمل طولانی ترجیح می‌دهید.",
+    "انرژی خود را بیشتر از تنهایی به دست می‌آورید تا معاشرت.",
+    "استدلال منطقی را به ملاحظات شخصی ترجیح می‌دهید.",
+    "واقع‌بین و عملی هستید تا خیال‌پرداز و نظری.",
+    "ترجیح می‌دهید تصمیم‌های خود را تا حد امکان به تعویق بیندازید.",
+    "به راحتی با دیگران ارتباط برقرار می‌کنید و دوستان جدیدی پیدا می‌کنید.",
+    "هنگام تصمیم‌گیری، تأثیر تصمیم بر دیگران برایتان مهم است.",
+    "به نظم و ساختار در کار و زندگی اهمیت زیادی می‌دهید.",
+    "ایده‌های جدید و نوآورانه شما را هیجان‌زده می‌کند.",
+    "اغلب بر اساس شهود و درک ناخودآگاه عمل می‌کنید.",
+    "پروژه‌های ناتمام شما را آزار می‌دهد و دوست دارید کارها را تمام کنید.",
+    "در موقعیت‌های اجتماعی، ترجیح می‌دهید بیشتر گوش دهید تا صحبت کنید.",
+    "تحلیل مسائل به صورت منطقی برای شما لذت‌بخش است.",
+    "به اتفاقات غیرمنتظره و تجربیات جدید علاقه دارید.",
+    "قبل از اقدام ترجیح می‌دهید دقیق برنامه‌ریزی کنید.",
+    "روابط عمیق برای شما مهم‌تر از ارتباطات گسترده است.",
+    "در حل مسئله به الگوهای کلی بیش از جزئیات توجه می‌کنید.",
+    "در مواجهه با مسائل احساسی، گاهی منطق را کنار می‌گذارید.",
+    "سازگاری با شرایط جدید برای شما آسان است.",
+    "دوست دارید کارها را به روش و時間 خود انجام دهید.",
+    "دیگران شما را فردی صمیمی و گرم می‌دانند.",
+    "به آینده و احتمالات آن بیش از حال فکر می‌کنید.",
+    "قوانین و مقررات برای شما مهم هستند و معمولاً از آن‌ها پیروی می‌کنید.",
+    "نظم و ترتیب در محیط کار و زندگی برای شما اهمیت زیادی دارد.",
+    "ایده‌پردازی برای شما لذت‌بخش‌تر از اجرای عملی است.",
+    "گاهی بر اساس ارزش‌های شخصی تصمیم می‌گیرید حتی اگر منطقی نباشد.",
+    "معاشرت زیاد شما را خسته می‌کند.",
+    "به داده‌ها و شواهد محسوس بیش از فرضیات توجه دارید.",
+    "دوست دارید گزینه‌ها را باز نگه دارید و دیرتر تصمیم بگیرید.",
+    "معمولاً آغازگر گفتگو در جمع‌ها هستید.",
+    "هماهنگی و پرهیز از تعارض برای شما مهم‌تر از بیان حقیقت است.",
+    "به نمادها و معانی پنهان توجه دارید.",
+    "تصمیم‌گیری سریع و قاطع را ترجیح می‌دهید.",
+    "نیاز به حریم شخصی و زمان تنهایی برای شما مهم است.",
+    "ارزیابی منطقی موقعیت‌ها برایتان مهم‌تر از ملاحظات احساسی است.",
+    "به واقعیات ملموس بیش از نظریات انتزاعی توجه دارید.",
+    "انعطاف‌پذیری و بازبودن را به ساختار ثابت ترجیح می‌دهید.",
+    "دیگران را تشویق و حمایت می‌کنید.",
+    "به آنچه می‌تواند باشد بیش از آنچه هست توجه دارید.",
+    "تصمیم‌های شما معمولاً قطعی و نهایی هستند.",
+    "معاشرت با دیگران به شما انرژی می‌دهد.",
+    "منطق و سازگاری برای شما مهم‌تر از ملاحظات شخصی است.",
+    "به لحظه حال و آنچه اکنون رخ می‌دهد توجه دارید.",
+    "تصمیمات خود را تا حد امکان به تعویق می‌اندازید.",
+    "معمولاً در جمع‌ها مرکز توجه هستید.",
+    "احساسات و نیازهای دیگران برای شما بسیار مهم است.",
+    "به بینش‌ها و ایده‌های نو بیش از تجربیات گذشته توجه دارید."
+  ];
+
+  const TOTAL = questions.length;
+
+  // ============= نگاشت اندیس‌ها به ابعاد ============
+  const mapEI = [0,4,11,19,23,27,34,38,43,47,51,55,59];
+  const mapSN = [2,9,17,21,28,31,36,41,44,49,52,56];
+  const mapTF = [1,6,10,14,16,20,24,29,32,37,40,45,50,53,57];
+  const mapJP = [3,7,12,15,18,22,25,30,33,39,42,46,48,54,58];
+
+  // ============= دیتای 16 تیپ با جزئیات کامل ============
+  const TYPES = {
+    INTJ:{
+      title:"معمار",
+      desc:"استراتژیک، آینده‌نگر و علاقه‌مند به بهبود سیستم‌ها.",
+      strengths:[
+        "نگرش راهبردی و برنامه‌ریزی بلندمدت",
+        "تحلیل مسائل پیچیده به سرعت",
+        "استقلال فکری و تصمیم‌گیری قاطع",
+        "توانایی طراحی سیستم‌ها و فرایندها",
+        "تمرکز بالا روی اهداف"
+      ],
+      weaknesses:[
+        "بی‌حوصلگی نسبت به کارهای تکراری",
+        "مشکل در بروز احساسات و همدلی عاطفی",
+        "استانداردهای بسیار بالا برای دیگران",
+        "تمایل به انتقاد مستقیم که گاهی آزاردهنده است",
+        "فراموشی جزئیات انسانی هنگام تحلیل"
+      ],
+      tips:[
+        "تمرین «گوش دادن فعال» در گفتگوها",
+        "تقسیم پروژه‌ها به گام‌های کوچک و قابل پیگیری",
+        "برنامه‌ریزی زمان برای بروز همدلی و قدردانی",
+        "درخواست بازخورد از همکاران و نزدیکان",
+        "تمرین مهارت‌های ارتباطی غیررسمی"
+      ],
+      jobs:["مدیریت محصول","معماری نرم‌افزار","تحلیلگر استراتژی","تحقیق و توسعه"],
+      famous:[
+        ["Elon Musk","https://upload.wikimedia.org/wikipedia/commons/3/34/Elon_Musk_Royal_Society_%28crop2%29.jpg","کارآفرین فناوری؛ بنیان‌گذار تسلا و اسپیس‌ایکس."],
+        ["Friedrich Nietzsche","https://upload.wikimedia.org/wikipedia/commons/1/1b/Nietzsche187a.jpg","فیلسوف آلمانی؛ متفکری تأثیرگذار در فلسفهٔ غرب."],
+        ["Margaret Thatcher","https://upload.wikimedia.org/wikipedia/commons/6/67/Margaret_Thatcher.png","نخست‌وزیر بریتانیا؛ سیاست‌مداری مصمم و استراتژیک."],
+        ["Isaac Newton","https://upload.wikimedia.org/wikipedia/commons/d/d4/Sir_Isaac_Newton_%281637-1727%29.jpg","مکانیک کلاسیک و ریاضیدان برجسته؛ متفکر ساختاری."],
+        ["Vera Rubin","https://upload.wikimedia.org/wikipedia/commons/f/f7/Vera_Rubin.jpg","ستاره‌شناس پیشرو؛ پژوهشگر نظام‌مند در اخترفیزیک."]
+      ]
+    },
+    INTP:{
+      title:"منطقی",
+      desc:"تحلیلی، نظری و کنجکاو دربارهٔ ایده‌ها و الگوها.",
+      strengths:[
+        "تفکر انتقادی و تجزیه‌و‌تحلیل نظری",
+        "کنجکاوی فکری بالا",
+        "توانایی مدل‌سازی مفاهیم انتزاعی",
+        "انعطاف‌پذیری ذهنی در آزمون فرضیه‌ها",
+        "یادگیری سریع دربارهٔ حوزه‌های نو"
+      ],
+      weaknesses:[
+        "تاخیر در اجرای عملی ایده‌ها",
+        "فراموش شدن جزییات اجرایی و زمان‌بندی",
+        "کم‌توجهی به نیازهای اجتماعی تیم",
+        "تمایل به پرچالش کردن برای خود و دیگران",
+        "گاهی دور شدن از واقعیت‌های عملی"
+      ],
+      tips:[
+        "تخصیص زمان‌های معین برای اجرا ( timers )",
+        "نوشتن چک‌لیست برای پیاده‌سازی",
+        "درگیر کردن دیگران برای تمام کردن پروژه‌ها",
+        "تمرین ساده‌سازی ایده‌ها برای دیگران",
+        "تعیین مهلت‌های بیرونی برای تکمیل کار"
+      ],
+      jobs:["تحقیق و توسعه","علم داده","معماری سیستم","مشاوره فنی"],
+      famous:[
+        ["Albert Einstein","https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg","فیزیک‌دان نظری؛ نماد تفکر انتزاعی و مدل‌سازی جهان."],
+        ["Marie Curie","https://upload.wikimedia.org/wikipedia/commons/6/6d/Marie_Curie_c1920.jpg","پژوهشگر برجسته در رادیواکتیویته؛ پژوهشگر مستقل و کنجکاو."],
+        ["John von Neumann","https://upload.wikimedia.org/wikipedia/commons/4/4a/JohnVonNeumann-LosAlamos.gif","ریاضیدان و مهندس نظری؛ بنیان‌گذار محاسبات مدرن."],
+        ["Isaac Asimov","https://upload.wikimedia.org/wikipedia/commons/2/2c/Isaac.Asimov01.jpg","نویسنده و دانشمند؛ نویسندهٔ آثار علمی-تخیلی و علمی."],
+        ["Ada Lovelace","https://upload.wikimedia.org/wikipedia/commons/a/a4/Ada_Lovelace_portrait.jpg","پیشگام برنامه‌نویسی؛ نظریه‌پرداز محاسبات."]
+      ]
+    },
+    ENTJ:{
+      title:"رهبر",
+      desc:"قاطع، سازمان‌ده و نتیجه‌گرا؛ توانایی هدایت و پیاده‌سازی دارد.",
+      strengths:[
+        "توان رهبری و هدایت تیم‌ها",
+        "تصمیم‌گیری سریع در شرایط بحرانی",
+        "تمرکز بر کارایی و نتیجه",
+        "توانایی سازمان‌دهی منابع",
+        "بانی تغییرات ساختاری"
+      ],
+      weaknesses:[
+        "فراموشی احساسات انسانی در تصمیمات",
+        "بی‌صبری نسبت به کندی تیم",
+        "رویکرد کنترل‌کننده در برخی مواقع",
+        "فشار بالا بر دیگران برای نتایج"
+      ],
+      tips:[
+        "تقویت مهارت‌های گوش دادن فعال",
+        "تفویض اختیار با اعتمادسازی",
+        "آموزش شفاف‌سازی انتظارات",
+        "انعطاف در سبک مدیریتی با افراد متفاوت",
+        "توجه به تعادل زندگی-کار"
+      ],
+      jobs:["مدیریت ارشد","کارآفرینی","مدیر عملیات","مدیریت پروژه"],
+      famous:[
+        ["Margaret Thatcher","https://upload.wikimedia.org/wikipedia/commons/6/67/Margaret_Thatcher.png","نخست‌وزیر بریتانیا؛ رهبر قاطع و سیاست‌گذار."],
+        ["Steve Jobs","https://upload.wikimedia.org/wikipedia/commons/8/85/Steve_Jobs_Headshot_2010-CROP.jpg","کارآفرین و مدیر محصول؛ هدایت نوآوری و اجرا."],
+        ["Napoleon Bonaparte","https://upload.wikimedia.org/wikipedia/commons/5/50/Jacques-Louis_David_-_The_Emperor_Napoleon_in_His_Study_at_the_Tuileries.jpg","رهبر نظامی با مهارت سازمانی بالا."],
+        ["Hillary Clinton","https://upload.wikimedia.org/wikipedia/commons/5/5f/Hillary_Clinton_official_Secretary_of_State_portrait_crop.jpg","سیاست‌مدار و مدیر ارشد با تجربه اجرایی."],
+        ["Sheryl Sandberg","https://upload.wikimedia.org/wikipedia/commons/8/8c/Sheryl_Sandberg_cropped.jpg","مدیر فناوری و نویسنده؛ تجربهٔ رهبری در سازمان‌های بزرگ."]
+      ]
+    },
+    ENTP:{
+      title:"مناظره‌گر",
+      desc:"خلاق، چابک و سازگار؛ عاشق ایده‌ها و چالش فکری.",
+      strengths:[
+        "نوآوری و ایده‌پردازی سریع",
+        "توان سازگاری در شرایط جدید",
+        "روحیهٔ چالشی سازنده",
+        "خلاقیت در حل مسئله",
+        "توان مذاکره و متقاعدسازی"
+      ],
+      weaknesses:[
+        "شروع بیش از حد پروژه و نیمه‌تمام ماندن",
+        "پراکنده‌کاری و عدم تعقیب ایده‌ها",
+        "گاهی بی‌توجه به جزئیات اجرایی"
+      ],
+      tips:[
+        "تمرکز روی ۱–۲ پروژه کلیدی همزمان",
+        "ایجاد سازوکار پیگیری (Kanban/Trello)",
+        "همکاری با افراد ساختاریافته‌تر",
+        "تعیین زمان‌بندی برای ایده‌پردازی",
+        "آموزش تبدیل ایده به گام‌های عملی"
+      ],
+      jobs:["محصول و نوآوری","استارتاپ","مشاوره ایده","روابط عمومی"],
+      famous:[
+        ["Thomas Edison","https://upload.wikimedia.org/wikipedia/commons/9/9d/Thomas_Edison2.jpg","مخترع و کارآفرین؛ خلاق و مداوم در اجرا."],
+        ["Mark Twain","https://upload.wikimedia.org/wikipedia/commons/0/0c/Mark_Twain_by_AF_Bradley.jpg","نویسندهٔ شوخ‌طبع و نقدگر اجتماعی."],
+        ["Sacha Baron Cohen","https://upload.wikimedia.org/wikipedia/commons/5/5f/Sacha_Baron_Cohen_2016.jpg","بازیگر و طنزپرداز که نقش‌های چالشی خلق می‌کند."],
+        ["Catherine the Great","https://upload.wikimedia.org/wikipedia/commons/d/d3/Catherine_II_by_Vigee-Lebrun_1790.jpg","پادشاهی هوشمند و سیاست‌مدار تغییرطلب."],
+        ["Salvador Dalí","https://upload.wikimedia.org/wikipedia/commons/0/08/Salvador_Dal%C3%AD_1939.jpg","هنرمند نوآور و خلاق با دید متفاوت."]
+      ]
+    },
+    INFJ:{
+      title:"حامی",
+      desc:"بینش‌مند، همدل و ارزش‌گرا؛ به معنا و اثر بلندمدت اهمیت می‌دهد.",
+      strengths:[
+        "همدلی و درک عمیق دیگران",
+        "تعهد به ارزش‌ها و اصول",
+        "بینش دربارهٔ پتانسیل‌های انسانی",
+        "توان انگیزش و هدایت بر اساس معنا"
+      ],
+      weaknesses:[
+        "احساس فرسودگی از بار عاطفی دیگران",
+        "مرزبندی ضعیف در کمک‌رسانی",
+        "حساسیت نسبت به انتقاد"
+      ],
+      tips:[
+        "قرار دادن مرزهای روشن در روابط",
+        "گرفتن زمان برای خودمراقبتی",
+        "ثبت موفقیت‌ها برای تقویت عزت نفس",
+        "تمرین درخواست کمک از دیگران",
+        "برنامه‌ریزی انرژی برای جلوگیری از فرسودگی"
+      ],
+      jobs:["مشاوره","آموزش","روان‌شناسی","سازمان‌های غیرانتفاعی"],
+      famous:[
+        ["Nelson Mandela","https://upload.wikimedia.org/wikipedia/commons/0/0d/Nelson_Mandela-2008_%28edit%29.jpg","رهبر ارزش‌محور و مدافع حقوق بشر."],
+        ["Carl Jung","https://upload.wikimedia.org/wikipedia/commons/8/8c/Carl_Jung2.jpg","روان‌شناس تحلیلی؛ نظریه‌پرداز شخصیت و ناخودآگاه."],
+        ["Martin Luther King Jr.","https://upload.wikimedia.org/wikipedia/commons/a/a2/Martin_Luther_King_Jr_NYWTS.jpg","رهبر حقوق مدنی با چشم‌انداز انسانی."],
+        ["Mother Teresa","https://upload.wikimedia.org/wikipedia/commons/4/4a/MotherTeresa_1.jpg","خدمت‌گزار به نیازmندان و همدل با رنج دیگران."],
+        ["Mahatma Gandhi","https://upload.wikimedia.org/wikipedia/commons/d/d1/Portrait_Gandhi.jpg","رهبر تحولی با تأکید بر ارزش و اخلاق."]
+      ]
+    },
+    INFP:{
+      title:"میانجی",
+      desc:"ایده‌آل‌گرا، خلاق و وفادار به ارزش‌های درونی.",
+      strengths:[
+        "خلاقیت و تخیل غنی",
+        "وفاداری و ارزش‌محوری",
+        "همدلی و حساسیت هنری",
+        "توان درک پیامدهای اخلاقی"
+      ],
+      weaknesses:[
+        "حساسیت بیش از حد به انتقاد",
+        "نترسیدن از تصمیم‌گیری‌های دشوار",
+        "تعلل در اجرای ایده‌ها"
+      ],
+      tips:[
+        "نوشتن اهداف و تقسیم به گام‌های کوچک",
+        "پذیرش بازخورد به عنوان رشد",
+        "پیدا کردن شریک عملی در پروژه‌ها",
+        "قرار گرفتن در برنامهٔ روزانهٔ کوتاه‌مدت",
+        "تعیین جدول زمانی برای خلاقیت"
+      ],
+      jobs:["نویسندگی","هنر","mشاوره خلاق","طراحی تجربه"],
+      famous:[
+        ["J.R.R. Tolkien","https://upload.wikimedia.org/wikipedia/commons/6/66/Tolkien_1916.jpg","نویسندهٔ حماسه‌ای و خلاق، سازندهٔ دنیای فانتزی."],
+        ["William Shakespeare","https://upload.wikimedia.org/wikipedia/commons/a/a2/Shakespeare.jpg","نمایشنامه‌نویسی با درک عمیق احساسات انسانی."],
+        ["Bjork","https://upload.wikimedia.org/wikipedia/commons/7/73/Bj%C3%B6rk_%28cropped%29.jpg","هنرمند مستقل و نوآور موسیقی."],
+        ["Vincent van Gogh","https://upload.wikimedia.org/wikipedia/commons/6/6f/VanGogh_1887_Selbstbildnis.jpg","نقاشی با درون‌نگری و حساسیت هنری."],
+        ["Adele","https://upload.wikimedia.org/wikipedia/commons/7/7d/Adele_2016.jpg","خواننده‌ای با بیان احساسی عمیق در آثارش."]
+      ]
+    },
+    ENFJ:{
+      title:"قهرمان",
+      desc:"اجتماعی، الهام‌بخش و سازمان‌ده؛ توان ایجاد هم‌افزایی در تیم‌ها دارد.",
+      strengths:[
+        "توان الهام‌بخشی و سازمان‌دهی تیم",
+        "توانمندی در ارتباطات بین‌فردی",
+        "تمرکز بر رشد دیگران",
+        "هوش هیجانی بالا"
+      ],
+      weaknesses:[
+        "متحمل شدن فشار زیاد برای دیگران",
+        "سختی در اولویت‌بندی نیازهای خود",
+        "احتمال خستگی اجتماعی"
+      ],
+      tips:[
+        "تمرین گفتن «نه» به پروژه‌های غیرضروری",
+        "تفویض مسئولیت و اعتماد to تیم",
+        "زمان‌بندی برای مراقبت از خود",
+        "پذیرش انتقادات سازنده بدون شخصی کردن",
+        "پایش نتایج تیم به‌صورت منظم"
+      ],
+      jobs:["منابع انسانی","آموزش","رهبری تیم","مربیگری"],
+      famous:[
+        ["Barack Obama","https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg","سیاست‌مدار و سخنران الهام‌بخش."],
+        ["Oprah Winfrey","https://upload.wikimedia.org/wikipedia/commons/8/8d/Oprah_in_2014.jpg","مجری و منتور رسانه‌ای با تأثیر اجتماعی."],
+        ["Eleanor Roosevelt","https://upload.wikimedia.org/wikipedia/commons/6/6f/Eleanor_Roosevelt_portrait_1933.jpg","فعال حقوق بشر و رهبری اخلاقی."],
+        ["Maya Angelou","https://upload.wikimedia.org/wikipedia/commons/1/18/Maya_Angelou_AP_1998.jpg","شاعر و الهام‌بخش اجتماعی."],
+        ["Desmond Tutu","https://upload.wikimedia.org/wikipedia/commons/4/45/Desmond_Tutu_2007.jpg","رهبر دینی و فعال حقوق بشر." ]
+      ]
+    },
+    ENFP:{
+      title:"کمپین‌گر",
+      desc:"انرژی‌زا، خلاق و الهام‌بخش؛ دوست‌دار آزادی و ارتباطات گسترده.",
+      strengths:[
+        "خلاقیت و شور ایده‌پردازی",
+        "توان شبکه‌سازی و ایجاد انگیزه",
+        "انعطاف‌پذیری و کنجکاوی",
+        "توان دیدن فرصت‌ها"
+      ],
+      weaknesses:[
+        "عدم پایبندی به برنامهٔ بلندمدت",
+        "پراکنده‌کاری بین پروژه‌ها",
+        "تمرکز کم روی جزئیات اجرایی"
+      ],
+      tips:[
+        "انتخاب ۲ هدف کلیدی و تمرکز بر آن‌ها",
+        "استفاده از ابزارهای پیگیری ساده",
+        "کار با یک شریک اجرایی برای تکمیل کار",
+        "ایجاد روتین‌های کوتاه روزانه",
+        "استفاده از تقویم برای تعهدات"
+      ],
+      jobs:["بازاریابی","خلاقیت","روابط عمومی","استارتاپ"],
+      famous:[
+        ["Robin Williams","https://upload.wikimedia.org/wikipedia/commons/0/02/Robin_Williams_2011a_%28cropped%29.jpg","بازیگر و طنزپرداز پرانرژی و خلاق."],
+        ["Ellen DeGeneres","https://upload.wikimedia.org/wikipedia/commons/3/35/Ellen_DeGeneres_2011.jpg","مجری و طنزپرداز با ارتباط نزدیک با مخاطبان."],
+        ["Salvador Dalí","https://upload.wikimedia.org/wikipedia/commons/0/08/Salvador_Dal%C3%AD_1939.jpg","هنرمند نوآور و بدیع."],
+        ["Anne Frank","https://upload.wikimedia.org/wikipedia/commons/7/7d/Anne_Frank_portret.jpg","نمونه‌ای تاریخی از درون‌نگری و احساس انسانی."],
+        ["Sacha Baron Cohen","https://upload.wikimedia.org/wikipedia/commons/5/5f/Sacha_Baron_Cohen_2016.jpg","طنزپرداز و خلق نقش‌های چالشی."]
+      ]
+    },
+    ISTJ:{
+      title:"لجستیک‌دان",
+      desc:"مسئول، قابل‌اطمینان و سازمان‌یافته؛ عالی در نظم‌دهی و اجرا.",
+      strengths:[
+        "دقت و توجه to جزئیات",
+        "پایبندی به استانداردها و رویه‌ها",
+        "تعهد و مسئولیت‌پذیری",
+        "عملگرایی و کارایی بالا"
+      ],
+      weaknesses:[
+        "مقاومت در برابر تغییر ناگهانی",
+        "انعطاف‌پذیری کم در شرایط نامشخص",
+        "تمایل to قضاوت سریع نسبت به روش‌های جدید"
+      ],
+      tips:[
+        "آزمایش تغییرات کوچک و ارزیابی تدریجی",
+        "پذیرش ابزارهای نوین با دورهٔ آموزشی",
+        "ایجاد زمان انعطاف‌پذیر برای خلاقیت",
+        "مشارکت در تیم‌های چندمهارتی",
+        "تمرین مهارت‌های ارتباطی غیررسمی"
+      ],
+      jobs:["حسابداری","کنترل کیفیت","عملیات","مدیریت اجرایی"],
+      famous:[
+        ["Angela Merkel","https://upload.wikimedia.org/wikipedia/commons/5/5d/Angela_Merkel_July_2010.jpg","نخست‌وزیر سابق آلمان؛ مدیری با ثبات و دقیق."],
+        ["Warren Buffett","https://upload.wikimedia.org/wikipedia/commons/5/5d/Warren_Buffett_KU_Visit.jpg","سرمایه‌گذار محافظه‌کار و دقیق."],
+        ["Natalie Portman","https://upload.wikimedia.org/wikipedia/commons/7/79/Natalie_Portman_Cannes_2015_5.jpg","بازیگر با برنامه‌ریزی و حرفه‌ای."],
+        ["Queen Elizabeth II","https://upload.wikimedia.org/wikipedia/commons/1/1b/Queen_Elizabeth_II_1952.jpg","نماد ثبات و وظیفه‌شناسی."],
+        ["George Washington","https://upload.wikimedia.org/wikipedia/commons/6/6f/Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg","نماد مسئولیت‌پذیری در رهبری کشور."]
+      ]
+    },
+    ISFJ:{
+      title:"مدافع",
+      desc:"مهربان، وظیفه‌شناس و قابل‌اطمینان؛ به رفاه دیگران اهمیت می‌دهد.",
+      strengths:[
+        "عمل‌گرایی حمایتی و پشتیبانی از دیگران",
+        "حساسیت به نیازهای عملی دیگران",
+        "دقت در اجرا و پیگیری جزئیات",
+        "وفاداری و قابل‌اعتماد بودن"
+      ],
+      weaknesses:[
+        "سخت بودن در گفتن «نه»",
+        "تحمل بار دیگران تا فرسودگی",
+        "ترس از تغییرات اجتماعی"
+      ],
+      tips:[
+        "یادگیری مرزبندی مؤثر",
+        "تقسیم وظایف و درخواست کمک",
+        "تعیین زمان برای استراحت شخصی",
+        "پذیرش تغییرات کوچک به صورت مرحله‌ای",
+        "ثبت دستاوردها برای تقویت حس موفقیت"
+      ],
+      jobs:["پرستاری","آموزش","خدمات مشتری","مدیریت پشتیبانی"],
+      famous:[
+        ["Beyoncé","https://upload.wikimedia.org/wikipedia/commons/2/2d/Beyonce_-_Wikimedia_Commons.jpg","خواننده و هنرمند با توجه به کیفیت اجرa."],
+        ["Rosa Parks","https://upload.wikimedia.org/wikipedia/commons/1/11/Rosa_Parks2.jpg","نمونهٔ ایستادگی آرام و مسئولیت‌پذیری."],
+        ["Jimmy Carter","https://upload.wikimedia.org/wikipedia/commons/2/21/Jimmy_Carter_1998.jpg","سیاست‌مداری با رویکرد خدماتی و وظیفه‌شناس."],
+        ["Florence Nightingale","https://upload.wikimedia.org/wikipedia/commons/5/55/Florence_Nightingale_%281825-1910%29.jpg","نماد پرستاری و مراقبت از دیگران."],
+        ["Mother Teresa","https://upload.wikimedia.org/wikipedia/commons/4/4a/MotherTeresa_1.jpg","نمونهٔ خدمت‌رسانی بی‌دریغ."]
+      ]
+    },
+    ESTJ:{
+      title:"مدیر",
+      desc:"عملگرا، منظم و مسئول؛ علاقه‌مند به اجرای استانداردها و مدیریت تیم.",
+      strengths:[
+        "اجرای قوی و پیگیری نتایج",
+        "سازمان‌دهی and تعیین ساختار",
+        "قاطعیت در تصمیم‌گیری",
+        "توان اطمینان از پاسخگویی تیم"
+      ],
+      weaknesses:[
+        "انعطاف‌پذیری پایین در برابر روش‌های نو",
+        "بی‌توجهی به احساسات افراد در اجرا",
+        "تمایل to کنترل بیش از حد"
+      ],
+      tips:[
+        "گوش دادن فعال به ایده‌های تیمی",
+        "تفویض وظایف و اعتماد to تیم",
+        "آموزش مهارت‌های رهبری انعطاف‌پذیر",
+        "ایجاد فضای باز برای بازخورد",
+        "در نظر گرفتن پیامدهای انسانی تصمیمات"
+      ],
+      jobs:["مدیریت عملیات","برنامه‌ریزی","حاکمیت سازمانی","مدیریت پروژه"],
+      famous:[
+        ["Michelle Obama","https://upload.wikimedia.org/wikipedia/commons/4/4f/Michelle_Obama_2013_official_portrait.jpg","فعال و سازمان‌ده با برنامه‌های اجتماعی."],
+        ["Judge Judy","https://upload.wikimedia.org/wikipedia/commons/1/10/Judge_Judy_Sheindlin%2C_2011.jpg","شخصیتی قاطع و قانون‌مند در قضاوت."],
+        ["Vince Lombardi","https://upload.wikimedia.org/wikipedia/commons/3/3f/Vince_Lombardi_1960.jpg","مربی مشهور با قاعده‌مندی بالا."],
+        ["Margaret Thatcher","https://upload.wikimedia.org/wikipedia/commons/6/67/Margaret_Thatcher.png","رهبر تصمیم‌گیر و اجرایی."],
+        ["Indra Nooyi","https://upload.wikimedia.org/wikipedia/commons/0/07/Indra_Nooyi_%283590381005%29.jpg","مدیرعامل سابق پی‌پال با تجربهٔ اجرایی بالا."]
+      ]
+    },
+    ESFJ:{
+      title:"کنسول",
+      desc:"اجتماعی، وظیface‌شناس و حامی؛ تمرکز بر هماهنگی و خدمت‌رسانی دارد.",
+      strengths:[
+        "توان پشتیبانی از دیگران به طور عملی",
+        "حساسیت به نیازهای گروه",
+        "توان روابط عمومی و شبکه‌سازی",
+        "تعهد به نقش‌ها and وظایف"
+      ],
+      weaknesses:[
+        "نگرانی بیش از حد دربارهٔ قضاوت دیگران",
+        "ترس از رد شدن یا عدم پذیرش",
+        "تعطیلات در اولویت‌بندی نیازهای خود"
+      ],
+      tips:[
+        "تمرکز بر معیارهای درونی به جای توصیهٔ دیگران",
+        "تعیین مرزهای سالم",
+        "پذیرفتن نقد به عنوان ابزار رشد",
+        "تخصیص زمان برای توسعهٔ فردی",
+        "یادگیری مدیریت استرس اجتماعی"
+      ],
+      jobs:["خدمات مشتری","آموزش","روابط عمومی","پشتیبانی سازمانی"],
+      famous:[
+        ["Taylor Swift","https://upload.wikimedia.org/wikipedia/commons/f/f2/Taylor_Swift_2_-_2019_by_Glenn_Francis.jpg","خواننده و داستان‌پرداز اجتماعی."],
+        ["Jennifer Aniston","https://upload.wikimedia.org/wikipedia/commons/8/86/Jennifer_Aniston_2011.jpg","بازیگر محبوب و قابل‌ارتباط با عموم."],
+        ["Bill Clinton","https://upload.wikimedia.org/wikipedia/commons/3/3d/Bill_Clinton.jpeg","سیاست‌مداری با توان روابط عمومی بالا."],
+        ["Sam Walton","https://upload.wikimedia.org/wikipedia/commons/0/09/Sam_Walton.jpg","مؤسس وال‌مارت؛ توجه to مشتری and خدمت."],
+        ["Ellen DeGeneres","https://upload.wikimedia.org/wikipedia/commons/3/35/Ellen_DeGeneres_2011.jpg","مجری با پیوند فراگیر با مخاطبان."]
+      ]
+    },
+    ISTP:{
+      title:"مهارت‌گر (Virtuoso)",
+      desc:"عمل‌گرا، ملموس و ماهر در حل مشکلات فنی and عملی.",
+      strengths:[
+        "توانایی حل مسائل فنی در زمان کم",
+        "خونسردی در شرایط تنش‌زا",
+        "علاقه to مهارت‌ورزی and تجربه عملی",
+        "انعطاف در اجرای راهکارها"
+      ],
+      weaknesses:[
+        "بی‌حوصلگی نسبت to بوروکراسی",
+        "عدم تمرکز بر برنامه‌ریزی بلندمدت",
+        "گاه بی‌توجهی to اثرات between‌فردی"
+      ],
+      tips:[
+        "ثبت نتایج عملی برای نشان دادن پیشرفت",
+        "تعهد to زمان‌بندی برای تکمیل کار",
+        "گسترش مهارت‌های ارتباطی رسمی",
+        "همکاری دربارهٔ پروژه‌های بلندمدت",
+        "استفاده از چک‌لیست برای جزئیات"
+      ],
+      jobs:["مهندسی عملی","شیفت‌های فنی","عیب‌یابی","صنایع دستی تخصصی"],
+      famous:[
+        ["Steve Jobs","https://upload.wikimedia.org/wikipedia/commons/8/85/Steve_Jobs_Headshot_2010-CROP.jpg","نوآور and مرئی‌ساز محصولاتی با طراحی دقیق."],
+        ["Clint Eastwood","https://upload.wikimedia.org/wikipedia/commons/3/37/Clint_Eastwood_2010.JPG","بازیگر and کارگردان که نقش‌های عملی ایفا می‌کند."],
+        ["Amelia Earhart","https://upload.wikimedia.org/wikipedia/commons/2/24/Amelia_Earhart_standing_under_nose_of_her_Lockheed_5B_Electra%2C_c._1937.jpg","پیشرو در هوانوردی and جسور در اجرا."],
+        ["Bear Grylls","https://upload.wikimedia.org/wikipedia/commons/7/7b/Bear_Grylls_2013.jpg","ماجراجو and متخصص بقا در طبیعت."],
+        ["Michael Jordan","https://upload.wikimedia.org/wikipedia/commons/0/0e/Michael_Jordan_in_2014.jpg","ورزشکار عمل‌گرا and تمرکزی بالا در اجرا."]
+      ]
+    },
+    ISFP:{
+      title:"ماجراجو",
+      desc:"آرام، هنری and با تمرکز بر زیبایی‌ and تجربه‌های حسی.",
+      strengths:[
+        "حس زیبایی‌شناسی and توجه to جزئیات هنری",
+        "انعطاف and لذت from تجربه‌های حسی",
+        "توان همکاری ملایم and حمایتگر",
+        "حضور لحظه‌ای and خلاقیت تجربی"
+      ],
+      weaknesses:[
+        "کاهش انگیزه در پروژه‌های طولانی‌مدت",
+        "اجتناب from تعارض در حل مسائل سخت",
+        "گاهی عدم برنامه‌ریزی برای آینده"
+      ],
+      tips:[
+        "تعیین اهداف کوچک and قابل لمس",
+        "تمرین بیان نیازها در روابط",
+        "ایجاد روتین‌های ساده برای پیگیری پروژه",
+        "هماهنگی with شرکای بلندمدت برای حمایت اجرایی",
+        "تقویم‌بندی زمان برای خلاقیت"
+      ],
+      jobs:["طراحی","هنر","عکاسی","موسیقی"],
+      famous:[
+        ["Lady Gaga","https://upload.wikimedia.org/wikipedia/commons/6/6a/Lady_Gaga_interview_2016.jpg","خواننده and هنرمند با خلاقیت بصری بالا."],
+        ["Bob Dylan","https://upload.wikimedia.org/wikipedia/commons/1/1b/Bob_Dylan_%281982%29.jpg","موسیقیدان and شاعر با بیان شخصی قوی."],
+        ["Frida Kahlo","https://upload.wikimedia.org/wikipedia/commons/1/1d/Frida_Kahlo_%281934%29.jpg","نقاشی با بیان شخصی and احساسی قوی."],
+        ["David Bowie","https://upload.wikimedia.org/wikipedia/commons/0/09/DavidBowie_Chicago2002-08-08.jpg","هنرمند تجدیدنظرگر با تنوع خلاقانه."],
+        ["Christopher McCandless","https://upload.wikimedia.org/wikipedia/commons/0/00/Christopher_McCandless_portrait.jpg","نمونه‌ای from جست‌وجوی تجربه and زندگی متفاوت."]
+      ]
+    },
+    ESTP:{
+      title:"کارآفرین",
+      desc:"پرانرژی، حاضرذهن and اهل عمل؛ واکنش‌گر to فرصت‌هاست.",
+      strengths:[
+        "سرعت در تصمیم‌گیری عمل‌گرا",
+        "ریسک‌پذیری در فرصت‌یابی",
+        "توان متقاعدسازی and فروش",
+        "علاقه to تجربه‌های صریح and عملی"
+      ],
+      weaknesses:[
+        "شتاب‌زدگی and تصمیم‌گیری without تحلیل کافی",
+        "عدم تمرکز روی جزئیات بلندمدت",
+        "گذر سریع from پروژه‌ها without کامل شدن"
+      ],
+      tips:[
+        "مکث before تصمیم‌های مالی یا مهم",
+        "استفاده from مشاوره برای مسائل پیچیده",
+        "قرار گذاشتن مراحل کنترل کیفیت",
+        "همکاری with برنامه‌ریزان برای پروژه‌های بلندمدت",
+        "سنجش پیامدها پیش from اقدام"
+      ],
+      jobs:["فروش","مشاوره کسب‌وکار","تجارت","رویدادها"],
+      famous:[
+        ["Donald Trump","https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg","تاجر and چهره عمومی با استراتژی نمایشی."],
+        ["Madonna","https://upload.wikimedia.org/wikipedia/commons/3/3b/Madonna_Rebel_Heart_Tour_2015.jpg","خوانندهٔ تحول‌طلب and پرانرژی."],
+        ["Ernest Hemingway","https://upload.wikimedia.org/wikipedia/commons/1/1b/Ernest_Hemingway_1954.jpg","نویسنده‌ای با سبک مستقیم and عمل‌گرا."],
+        ["Roger Federer","https://upload.wikimedia.org/wikipedia/commons/7/7a/Roger_Federer_%288968732199%29.jpg","ورزشکار حرفه‌ای با عملکرد عالی در لحظه."],
+        ["Mad Max (character)","https://upload.wikimedia.org/wikipedia/en/3/32/Mad_Max_1979_poster.jpg","نماد اقدام مستقیم and بقای عملی (شخصیت سینمایی)."]
+      ]
+    },
+    ESFP:{
+      title:"نمایش‌گر",
+      desc:"خوش‌رو، پرانرژی and دوستدار تجربه‌های اجتماعی.",
+      strengths:[
+        "توان ایجاد شادی and انرژی در جمع",
+        "ارتباط قوی with مخاطبان",
+        "انعطاف‌پذیری and پاسخ سریع to شرایط",
+        "خلق تجربه‌های مثبت برای دیگران"
+      ],
+      weaknesses:[
+        "برنامه‌ریزی کم برای آینده",
+        "حساسیت to نقد and رد شدن",
+        "پراکنده شدن between تعهدات"
+      ],
+      tips:[
+        "تقویم‌بندی تعهدات and زمان‌بندی واضح",
+        "تمرین اولویت‌بندی پروژه‌ها",
+        "تعیین اهداف شخصی کوتاه‌مدت",
+        "یافتن کمک برای مسائل اجرایی",
+        "تکنیک‌های مدیریت استرس"
+      ],
+      jobs:["صحنه and اجرا","رویدادها","مهمانداری","سرگرمی"],
+      famous:[
+        ["Will Smith","https://upload.wikimedia.org/wikipedia/commons/1/1f/Will_Smith_2019_by_Glenn_Francis.jpg","بازیگر and مجری شاد and پرانرژی."],
+        ["Marilyn Monroe","https://upload.wikimedia.org/wikipedia/commons/0/0d/Marilyn_Monroe_1952.jpg","نماد جذابیت and حضور اجتماعی."],
+        ["Jamie Oliver","https://upload.wikimedia.org/wikipedia/commons/0/0d/Jamie_Oliver_2012.jpg","آشپز and مجری تلویزیونی with ارتباط گرم."],
+        ["Katy Perry","https://upload.wikimedia.org/wikipedia/commons/5/5f/KatyPerry2017.jpg","خوانندهٔ نمایشی and رنگی."],
+        ["P!nk","https://upload.wikimedia.org/wikipedia/commons/2/2d/P!nk_by_Gage_Skidmore.jpg","خواننده and اجراکننده با انرژی بالا."]
+      ]
+    }
+  };
+
+  // ============= حالت اولیه و ارجاعات DOM ============
+  const el = id => document.getElementById(id);
+  const exam = el('exam'), result = el('result');
+  const prevBtn = el('prevBtn'), nextBtn = el('nextBtn');
+  const retakeBtn = el('retakeBtn'), pdfBtn = el('pdfBtn'), pdfAlert = el('pdfAlert');
+  const qText = el('qText'), opts = el('opts'), curQ = el('curQ'), totQ = el('totQ'), bar = el('bar'), answeredMeta = el('answeredMeta');
+  const typeChip = el('typeChip'), typeTitle = el('typeTitle'), typeDesc = el('typeDesc'), confidenceEl = el('confidence');
+  const strengthsList = el('strengths'), weaknessesList = el('weaknesses'), tipsList = el('tips'), jobsList = el('jobs'), famousEl = el('famous');
+  const radarCanvas = el('radar'), donutCanvas = el('donut');
+
+  totQ.textContent = TOTAL;
+
+  // ============= state ============
+  let cur = 0;
+  const answers = Array(TOTAL).fill(null); // values 1..5 or null
+
+  // Helpers
+  const countAnswered = ()=> answers.filter(v=>v!==null).length;
+  const updateProgress = ()=>{
+    curQ.textContent = cur+1;
+    bar.style.width = ((cur+1)/TOTAL*100).toFixed(2)+'%';
+    answeredMeta.textContent = `${countAnswered()} پاسخ داده‌شده`;
+  };
+
+  // Render question
+  function renderQuestion(){
+    qText.textContent = questions[cur];
+    opts.innerHTML = '';
+    const labels = ["کاملاً موافقم","موافقم","خنثی","مخالفم","کاملاً مخالفم"];
+    for(let i=5;i>=1;i--){
+      const wrapper = document.createElement('div');
+      wrapper.className = 'opt' + (answers[cur]===i ? ' selected' : '');
+      const input = document.createElement('input');
+      input.type = 'radio'; input.name = 'answer'; input.value = i; input.id = `q${cur}a${i}`;
+      input.style.accentColor = '#00bcd4';
+      input.tabIndex = -1;
+      const label = document.createElement('label');
+      label.setAttribute('for', input.id);
+      label.textContent = labels[5-i];
+      wrapper.appendChild(input); wrapper.appendChild(label);
+      wrapper.addEventListener('click', ()=>{
+        document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+        wrapper.classList.add('selected');
+        answers[cur] = i;
+        updateProgress();
+      });
+      opts.appendChild(wrapper);
+    }
+    prevBtn.disabled = (cur===0);
+    nextBtn.textContent = (cur===TOTAL-1) ? 'مشاهده نتایج' : 'بعدی';
+    updateProgress();
+  }
+
+  // Scoring utilities: map sums robustly (unanswered -> neutral 3)
+  function sumFor(indices, invert=false){
+    let s=0;
+    for(const i of indices){
+      const v = answers[i];
+      const val = (v===null) ? 3 : v;
+      s += (invert ? (6 - val) : val);
+    }
+    return s;
+  }
+
+  function computeScores(){
+    const E = sumFor(mapEI,false);
+    const I = sumFor(mapEI,true);
+    const S = sumFor(mapSN,false);
+    const N = sumFor(mapSN,true);
+    const T = sumFor(mapTF,false);
+    const F = sumFor(mapTF,true);
+    const J = sumFor(mapJP,false);
+    const P = sumFor(mapJP,true);
+
+    // Percent of each pole relative to its pair (0..100)
+    const pct = (a,b)=> Math.round( a * 100 / (a + b) );
+
+    // For donut: show percentage relative to total sum across all poles (which is 6 * TOTAL)
+    const totalSumAll = 6 * TOTAL; // because for each mapped question pair, a+b = 6
+    const pctOfAll = (x)=> Math.round( x * 100 / totalSumAll );
+
+    return {
+      raw: {E,I,S,N,T,F,J,P},
+      pctPair: {
+        E: pct(E,I), I: pct(I,E),
+        S: pct(S,N), N: pct(N,S),
+        T: pct(T,F), F: pct(F,T),
+        J: pct(J,P), P: pct(P,J)
+      },
+      pctOfAll: {
+        E: pctOfAll(E), I: pctOfAll(I), S: pctOfAll(S), N: pctOfAll(N),
+        T: pctOfAll(T), F: pctOfAll(F), J: pctOfAll(J), P: pctOfAll(P)
+      }
+    };
+  }
+
+  function determineType(scoresRaw){
+    const code =
+      (scoresRaw.E > scoresRaw.I ? 'E' : 'I') +
+      (scoresRaw.S > scoresRaw.N ? 'S' : 'N') +
+      (scoresRaw.T > scoresRaw.F ? 'T' : 'F') +
+      (scoresRaw.J > scoresRaw.P ? 'J' : 'P');
+
+    const margins = [
+      Math.abs(scoresRaw.E - scoresRaw.I),
+      Math.abs(scoresRaw.S - scoresRaw.N),
+      Math.abs(scoresRaw.T - scoresRaw.F),
+      Math.abs(scoresRaw.J - scoresRaw.P)
+    ];
+    const conf = Math.round(margins.reduce((a,b)=>a+b,0) / (4 * (5 * Math.max(mapEI.length, mapTF.length))));
+    return code;
+  }
+
+  // Charts
+  let radarChart = null, donutChart = null;
+  function renderCharts(scoreObj){
+    // destroy if exists
+    if(radarChart) radarChart.destroy();
+    if(donutChart) donutChart.destroy();
+
+    radarChart = new Chart(radarCanvas.getContext('2d'), {
+      type:'radar',
+      data:{
+        labels:['E','I','S','N','T','F','J','P'],
+        datasets:[{
+          label:'درصد نسبت به جفت',
+          data:[
+            scoreObj.pctPair.E, scoreObj.pctPair.I,
+            scoreObj.pctPair.S, scoreObj.pctPair.N,
+            scoreObj.pctPair.T, scoreObj.pctPair.F,
+            scoreObj.pctPair.J, scoreObj.pctPair.P
+          ],
+          backgroundColor:'rgba(108,92,231,0.15)',
+          borderColor:'rgba(108,92,231,0.9)',
+          pointBackgroundColor:'rgba(0,188,212,1)'
+        }]
+      },
+      options:{
+        scales:{ r:{ suggestedMin:0, suggestedMax:100, ticks:{color:'#334155'}, pointLabels:{color:'#0f1724'} } },
+        plugins:{ legend:{labels:{color:'#0f1724'}} },
+        responsive:true
+      }
+    });
+
+    // Donut: show pctOfAll (each pole's raw sum relative to total possible sum)
+    donutChart = new Chart(donutCanvas.getContext('2d'), {
+      type:'doughnut',
+      data:{
+        labels:['E','I','S','N','T','F','J','P'],
+        datasets:[{
+          data:[
+            scoreObj.pctOfAll.E, scoreObj.pctOfAll.I,
+            scoreObj.pctOfAll.S, scoreObj.pctOfAll.N,
+            scoreObj.pctOfAll.T, scoreObj.pctOfAll.F,
+            scoreObj.pctOfAll.J, scoreObj.pctOfAll.P
+          ],
+          backgroundColor:[
+            '#60A5FA','#3B82F6','#F59E0B','#10B981','#8B5CF6','#F97316','#34D399','#FB7185'
+          ],
+          borderColor:'#ffffff',
+          borderWidth:2
+        }]
+      },
+      options:{
+        plugins:{
+          tooltip:{
+            callbacks:{
+              label: function(ctx){
+                const label = ctx.label || '';
+                const val = ctx.parsed;
+                return `${label}: ${val}% از کل (نسبت به ${TOTAL} سؤال)`;
+              }
+            }
+          },
+          legend:{labels:{color:'#0f1724'}}
+        },
+        responsive:true
+      }
+    });
+  }
+
+  // Fill lists
+  function fillList(container, items){
+    container.innerHTML = '';
+    items.forEach(it=>{
+      const li = document.createElement('li'); li.textContent = it;
+      container.appendChild(li);
+    });
+  }
+
+  // Render famous persons with short description
+  function renderFamous(listEl, data){
+    listEl.innerHTML = '';
+    data.forEach(([name, img, note])=>{
+      const card = document.createElement('div'); card.className='person-card';
+      const image = document.createElement('img'); image.src = img; image.alt = name;
+      image.crossOrigin = 'anonymous';
+      image.setAttribute('data-html2canvas-ignore','true');
+      const nm = document.createElement('div'); nm.style.fontWeight='700'; nm.style.fontSize='14px'; nm.textContent = name;
+      const nd = document.createElement('div'); nd.style.fontSize='13px'; nd.style.color='#475569'; nd.style.marginTop='6px'; nd.textContent = note;
+      card.appendChild(image); card.appendChild(nm); card.appendChild(nd);
+      listEl.appendChild(card);
+    });
+  }
+
+  // Show section utility
+  function showSection(which){
+    exam.style.display = 'none';
+    result.style.display = 'none';
+    document.getElementById(which).style.display = 'block';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // Finalize and show result
+  function finalize(){
+    const answered = countAnswered();
+    if(answered < Math.ceil(TOTAL * 0.8)){
+      if(!confirm('شما کمتر از ۸۰٪ سؤالات را پاسخ داده‌اید. ادامه می‌دهید؟')) return;
+    }
+
+    const sc = computeScores();
+    const code = determineType(sc.raw);
+    const typeInfo = TYPES[code] || TYPES['INTJ'];
+
+    typeChip.textContent = code;
+    typeTitle.textContent = `${code} — ${typeInfo.title}`;
+    typeDesc.textContent = typeInfo.desc;
+    confidenceEl.textContent = `تعداد پاسخ: ${answered} از ${TOTAL}`;
+
+    fillList(strengthsList, typeInfo.strengths);
+    fillList(weaknessesList, typeInfo.weaknesses);
+    fillList(tipsList, typeInfo.tips);
+    fillList(jobsList, typeInfo.jobs);
+    renderFamous(famousEl, typeInfo.famous);
+
+    renderCharts(sc);
+    showSection('result');
+  }
+
+  // Build PDF
+  async function buildPDF(){
+    pdfAlert.style.display = 'none';
+    try{
+      pdfAlert.className='alert';
+      pdfAlert.textContent = '';
+      pdfAlert.style.display = 'none';
+
+      const node = result;
+      pdfAlert.style.display = 'block';
+      pdfAlert.textContent = 'در حال ساخت PDF... لطفا صبر کنید.';
+      
+      const canvas = await html2canvas(node, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p','mm','a4');
+      const pageWidth = 210; const pageHeight = 297;
+      const imgWidth = pageWidth;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight);
+      heightLeft -= pageHeight;
+      while(heightLeft > 0){
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight);
+        heightLeft -= pageHeight;
+      }
+      pdf.save(`MBTI-Report-User.pdf`);
+      pdfAlert.textContent = 'PDF ساخته شد و دانلود آغاز شد.';
+      setTimeout(()=>{ pdfAlert.style.display='none'; },2500);
+    }catch(e){
+      console.error(e);
+      pdfAlert.style.display = 'block';
+      pdfAlert.textContent = 'خطا در ساخت PDF. لطفاً دوباره تلاش کنید.';
+    }
+  }
+
+  // ============= Event bindings ============
+  prevBtn.addEventListener('click', ()=>{
+    if(cur>0){ cur--; renderQuestion(); }
+  });
+  nextBtn.addEventListener('click', ()=>{
+    if(answers[cur] === null){
+      alert('لطفاً یکی از گزینه‌ها را انتخاب کنید.');
+      return;
+    }
+    if(cur < TOTAL - 1){ cur++; renderQuestion(); }
+    else finalize();
+  });
+
+  retakeBtn.addEventListener('click', ()=>{
+    if(confirm('آیا می‌خواهید آزمون را از ابتدا شروع کنید؟')){
+      for(let i=0;i<TOTAL;i++) answers[i]=null;
+      cur = 0;
+      showSection('exam');
+      renderQuestion();
+    }
+  });
+
+  pdfBtn.addEventListener('click', buildPDF);
+
+  // Initialize
+  updateProgress();
+  renderQuestion();
+
+});
+</script>
+</body>
+</html>
